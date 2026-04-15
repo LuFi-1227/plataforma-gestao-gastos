@@ -1,0 +1,25 @@
+<aside class="app-navbar" aria-label="Menu principal">
+	<button id="navbarToggleBtn" class="navbar-toggle" type="button" aria-label="Abrir menu" aria-expanded="false">
+		☰
+	</button>
+
+	<div id="navbarBackdrop" class="navbar-backdrop" hidden></div>
+
+	<nav id="navbarPanel" class="navbar-panel" aria-label="Navegação">
+		<div class="navbar-panel__header">
+			<strong>Menu</strong>
+			<button id="navbarCloseBtn" class="navbar-close" type="button" aria-label="Fechar menu">✕</button>
+		</div>
+
+		<ul class="navbar-list">
+			<li><button type="button" class="navbar-link is-active" data-page="dashboard">Dashboard</button></li>
+			<li><button type="button" class="navbar-link" data-page="transacoes">Transações Financeiras</button></li>
+			<li><button type="button" class="navbar-link" data-page="metas">Metas</button></li>
+
+			<li class="navbar-divider" data-admin-only="true"></li>
+			<li data-admin-only="true"><button type="button" class="navbar-link" data-page="usuarios">Gerir Usuários</button></li>
+			<li data-admin-only="true"><button type="button" class="navbar-link" data-page="pagamentosDashboard">Dashboard Pagamentos</button></li>
+			<li data-admin-only="true"><button type="button" class="navbar-link" data-page="customizacao">Customização do App</button></li>
+		</ul>
+	</nav>
+</aside>

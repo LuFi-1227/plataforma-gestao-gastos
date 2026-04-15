@@ -1,0 +1,34 @@
+<header class="app-header">
+	<div class="app-header__left">
+		<a href="/" class="brand" aria-label="Página inicial">
+			<img id="headerLogoImage" class="brand__logo" alt="Logo" hidden>
+			<span id="headerLogoText" class="brand__text">Gestor de Gastos</span>
+		</a>
+	</div>
+
+	<div class="app-header__right">
+		<button id="headerNotificationsBtn" class="icon-btn" type="button" aria-label="Notificações" title="Notificações">
+			🔔
+			<span id="headerNotificationsBadge" class="icon-btn__badge" hidden>0</span>
+		</button>
+
+		<div class="user-menu" id="headerUserMenuWrapper">
+			<button
+				id="headerUserMenuTrigger"
+				class="user-menu__trigger"
+				type="button"
+				aria-haspopup="menu"
+				aria-expanded="false"
+			>
+				<span id="headerUserAvatar" class="user-avatar" aria-hidden="true">US</span>
+				<span id="headerUserName" class="user-name">Usuário</span>
+				<span class="user-menu__caret" aria-hidden="true">▾</span>
+			</button>
+
+			<div id="headerUserMenu" class="user-menu__dropdown" role="menu" hidden>
+				<button id="headerEditUserBtn" type="button" role="menuitem" class="user-menu__item">Editar usuário</button>
+				<button id="headerLogoutBtn" type="button" role="menuitem" class="user-menu__item user-menu__item--danger">Sair</button>
+			</div>
+		</div>
+	</div>
+</header>

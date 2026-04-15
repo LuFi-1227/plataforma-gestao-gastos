@@ -1,0 +1,80 @@
+<section class="crud-card" id="metasCrudRoot">
+    <header class="crud-card__header">
+        <div>
+            <h2>Definição de Metas</h2>
+            <p>Gerencie suas metas com filtros por período, categoria, texto e valor.</p>
+        </div>
+
+        <button id="metasAddBtn" type="button" class="action-btn action-btn--primary action-btn--static-label" title="Adicionar meta" aria-label="Adicionar meta">
+            <span class="action-btn__icon" aria-hidden="true">＋</span>
+            <span class="action-btn__label">Adicionar meta</span>
+        </button>
+    </header>
+
+    <div class="crud-toolbar metas-filters-grid">
+        <input id="metasSearchInput" class="crud-search" type="search" placeholder="Filtrar por descrição" autocomplete="off">
+
+        <input id="metasValorFilterInput" class="crud-search" type="text" inputmode="decimal" placeholder="Filtrar por valor (R$)">
+
+        <select id="metasCategoriaFilter" class="crud-search">
+            <option value="">Todas as categorias</option>
+        </select>
+
+        <select id="metasAndamentoFilter" class="crud-search">
+            <option value="">Todos os status</option>
+            <option value="nao_batida">Não batida</option>
+            <option value="em_andamento">Em andamento</option>
+            <option value="batida">Batida</option>
+        </select>
+
+        <select id="metasMesFilter" class="crud-search">
+            <option value="">Todos os meses</option>
+            <option value="1">Janeiro</option>
+            <option value="2">Fevereiro</option>
+            <option value="3">Março</option>
+            <option value="4">Abril</option>
+            <option value="5">Maio</option>
+            <option value="6">Junho</option>
+            <option value="7">Julho</option>
+            <option value="8">Agosto</option>
+            <option value="9">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+        </select>
+
+        <input id="metasAnoFilter" class="crud-search" type="number" min="2000" step="1" placeholder="Ano (ex: 2026)">
+
+        <button id="metasApplyFiltersBtn" type="button" class="action-btn action-btn--ghost">
+            <span class="action-btn__icon" aria-hidden="true">🔎</span>
+            <span class="action-btn__label">Aplicar filtros</span>
+        </button>
+
+        <button id="metasClearFiltersBtn" type="button" class="action-btn action-btn--ghost">
+            <span class="action-btn__icon" aria-hidden="true">✕</span>
+            <span class="action-btn__label">Limpar filtros</span>
+        </button>
+    </div>
+
+    <div class="crud-table-wrapper">
+        <table class="crud-table" aria-label="Tabela de metas">
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>Atingir meta até</th>
+                    <th>Status</th>
+                    <th class="col-actions">Ações</th>
+                </tr>
+            </thead>
+            <tbody id="metasTableBody"></tbody>
+        </table>
+    </div>
+
+    <footer class="crud-pagination">
+        <button id="metasPrevPageBtn" type="button" class="pager-btn">Anterior</button>
+        <span id="metasPageInfo">Página 1 de 1</span>
+        <button id="metasNextPageBtn" type="button" class="pager-btn">Próxima</button>
+    </footer>
+</section>

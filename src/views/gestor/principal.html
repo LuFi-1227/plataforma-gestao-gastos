@@ -1,0 +1,106 @@
+<section class="crud-card" id="principalDashboardRoot">
+    <header class="crud-card__header">
+        <div>
+            <h2>Dashboard Financeiro</h2>
+            <p>Resumo dos seus ganhos, gastos e evolução financeira.</p>
+        </div>
+
+        <button id="principalDashboardRefreshBtn" type="button" class="action-btn action-btn--ghost">
+            <span class="action-btn__icon" aria-hidden="true">↻</span>
+            <span class="action-btn__label">Atualizar</span>
+        </button>
+    </header>
+
+    <div class="dashboard-period-label-wrap">
+        <span class="dashboard-period-label">Período aplicado:</span>
+        <strong id="principalDashboardPeriodLabel" class="dashboard-period-value">Mês atual</strong>
+    </div>
+
+    <div class="crud-toolbar dashboard-toolbar" id="principalDashboardToolbar">
+        <select id="principalPeriodType" class="crud-search">
+            <option value="mes_atual" selected>Mês atual</option>
+            <option value="mes">Filtrar por mês</option>
+            <option value="ano">Filtrar por ano</option>
+            <option value="todos">Todo período</option>
+        </select>
+
+        <select id="principalPeriodMonth" class="crud-search">
+            <option value="1">Janeiro</option>
+            <option value="2">Fevereiro</option>
+            <option value="3">Março</option>
+            <option value="4">Abril</option>
+            <option value="5">Maio</option>
+            <option value="6">Junho</option>
+            <option value="7">Julho</option>
+            <option value="8">Agosto</option>
+            <option value="9">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+        </select>
+
+        <input id="principalPeriodYear" class="crud-search" type="number" min="2000" step="1" placeholder="Ano (ex: 2026)">
+
+        <button id="principalDashboardApplyFiltersBtn" type="button" class="action-btn action-btn--ghost">
+            <span class="action-btn__icon" aria-hidden="true">🔎</span>
+            <span class="action-btn__label">Aplicar filtro</span>
+        </button>
+    </div>
+
+    <div class="payments-metrics-grid">
+        <article class="metric-card">
+            <span class="metric-card__label">Total ganho</span>
+            <strong id="principalTotalGanhos" class="metric-card__value">R$ 0,00</strong>
+            <span class="metric-card__hint">Soma de todas as entradas.</span>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-card__label">Total gasto</span>
+            <strong id="principalTotalGastos" class="metric-card__value">R$ 0,00</strong>
+            <span class="metric-card__hint">Soma de todas as saídas.</span>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-card__label">Saldo líquido</span>
+            <strong id="principalSaldoLiquido" class="metric-card__value">R$ 0,00</strong>
+            <span class="metric-card__hint">Ganhos menos gastos.</span>
+        </article>
+    </div>
+
+    <div class="dashboard-grid">
+        <article class="dashboard-card">
+            <h3>Comparativo ganhos x gastos</h3>
+            <div class="dashboard-card__canvas-wrap">
+                <canvas id="principalComparativoChart" aria-label="Gráfico comparativo de ganhos e gastos" role="img"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-card">
+            <h3>Gastos por descrição</h3>
+            <div class="dashboard-card__canvas-wrap">
+                <canvas id="principalGastosDescricaoChart" aria-label="Gráfico de pizza de gastos por descrição" role="img"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-card">
+            <h3>Ganhos por descrição</h3>
+            <div class="dashboard-card__canvas-wrap">
+                <canvas id="principalGanhosDescricaoChart" aria-label="Gráfico de pizza de ganhos por descrição" role="img"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-card">
+            <h3>Evolução do saldo mensal</h3>
+            <div class="dashboard-card__canvas-wrap">
+                <canvas id="principalSaldoMensalChart" aria-label="Gráfico de linha de saldo mensal" role="img"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-card dashboard-card--full">
+            <h3>Saldo por categoria</h3>
+            <div class="dashboard-card__canvas-wrap">
+                <canvas id="principalSaldoCategoriaChart" aria-label="Gráfico de barras de saldo por categoria" role="img"></canvas>
+            </div>
+        </article>
+    </div>
+</section>

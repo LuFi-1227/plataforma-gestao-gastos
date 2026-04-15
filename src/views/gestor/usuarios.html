@@ -1,0 +1,55 @@
+<section class="crud-card" id="usuariosCrudRoot">
+    <header class="crud-card__header">
+        <div>
+            <h2>Gerir Usuários</h2>
+            <p>Administre usuários com pesquisa, paginação e ações rápidas.</p>
+        </div>
+
+        <div class="crud-header-actions">
+            <button id="usuariosPaymentsDashboardBtn" type="button" class="action-btn action-btn--static-label" title="Dashboard de pagamentos" aria-label="Dashboard de pagamentos" hidden>
+                <span class="action-btn__icon" aria-hidden="true">💼</span>
+                <span class="action-btn__label">Dashboard pagamentos</span>
+            </button>
+
+            <button id="usuariosAddBtn" type="button" class="action-btn action-btn--primary action-btn--static-label" title="Adicionar usuário" aria-label="Adicionar usuário">
+                <span class="action-btn__icon" aria-hidden="true">＋</span>
+                <span class="action-btn__label">Adicionar</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="crud-toolbar crud-toolbar--inline">
+        <input
+            id="usuariosSearchInput"
+            class="crud-search"
+            type="search"
+            placeholder="Pesquisar por nome, email ou telefone"
+            autocomplete="off"
+        >
+
+        <button id="usuariosClearFiltersBtn" type="button" class="action-btn action-btn--ghost">
+            <span class="action-btn__icon" aria-hidden="true">✕</span>
+            <span class="action-btn__label">Limpar filtros</span>
+        </button>
+    </div>
+
+    <div class="crud-table-wrapper">
+        <table class="crud-table" aria-label="Tabela de usuários">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th class="col-email">Email</th>
+                    <th>Telefone</th>
+                    <th class="col-actions">Ações</th>
+                </tr>
+            </thead>
+            <tbody id="usuariosTableBody"></tbody>
+        </table>
+    </div>
+
+    <footer class="crud-pagination">
+        <button id="usuariosPrevPageBtn" type="button" class="pager-btn">Anterior</button>
+        <span id="usuariosPageInfo">Página 1 de 1</span>
+        <button id="usuariosNextPageBtn" type="button" class="pager-btn">Próxima</button>
+    </footer>
+</section>

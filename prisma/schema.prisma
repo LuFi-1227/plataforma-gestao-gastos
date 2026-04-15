@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model auditoria {
+  id                     Int       @id @default(autoincrement())
+  tabela_nome            String    @db.VarChar(100)
+  registro_id            Int?
+  operacao               String    @db.VarChar(10)
+  dados_antes            Json?
+  dados_depois           Json?
+  usuario_responsavel_id Int?
+  created_at             DateTime  @default(now()) @db.Timestamptz(6)
+  usuarios               usuarios? @relation(fields: [usuario_responsavel_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model categoria_customizacao {
+  id           Int            @id @default(autoincrement())
+  status       Int?           @default(1)
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime       @default(now()) @db.Timestamptz(6)
+  nome         String         @db.VarChar(100)
+  customizacao customizacao[]
+}
+
+model categoria_movimentacao {
+  id                      Int                       @id @default(autoincrement())
+  status                  Int?                      @default(1)
+  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  nome                    String                    @db.VarChar(100)
+  metas                   metas[]
+  movimentacao_financeira movimentacao_financeira[]
+  transacoes_recorrentes  transacoes_recorrentes[]
+}
+
+model customizacao {
+  id                     Int                    @id @default(autoincrement())
+  status                 Int?                   @default(1)
+  created_at             DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime               @default(now()) @db.Timestamptz(6)
+  valor                  String                 @db.VarChar(255)
+  tipo_valor             String                 @default("texto") @db.VarChar(20)
+  categoria_id           Int
+  categoria_customizacao categoria_customizacao @relation(fields: [categoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model metas {
+  id                        Int                    @id @default(autoincrement())
+  status                    Int?                   @default(1)
+  concluida                 Boolean                @default(false)
+  concluida_em              DateTime?              @db.Timestamptz(6)
+  notificacao_enviada       Boolean                @default(false)
+  notificacao_enviada_em    DateTime?              @db.Timestamptz(6)
+  created_at                DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime               @default(now()) @db.Timestamptz(6)
+  descricao                 String                 @db.VarChar(255)
+  valor                     Decimal                @db.Decimal(10, 2)
+  data_meta                 DateTime               @db.Date
+  usuario_id                Int
+  categoria_movimentacao_id Int
+  categoria_movimentacao    categoria_movimentacao @relation(fields: [categoria_movimentacao_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios                  usuarios               @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model movimentacao_financeira {
+  id                     Int                    @id @default(autoincrement())
+  status                 Int?                   @default(1)
+  created_at             DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime               @default(now()) @db.Timestamptz(6)
+  descricao              String                 @db.VarChar(255)
+  valor                  Decimal                @db.Decimal(10, 2)
+  data_movimentacao      DateTime               @db.Date
+  usuario_id             Int
+  categoria_id           Int
+  categoria_movimentacao categoria_movimentacao @relation(fields: [categoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios               usuarios               @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model pagamentos {
+  id              Int      @id @default(autoincrement())
+  status          Int?     @default(1)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+  descricao       String   @db.VarChar(255)
+  valor           Decimal  @db.Decimal(10, 2)
+  tipo_pagamento  String   @default("mensal") @db.VarChar(30)
+  data_pagamento  DateTime @db.Date
+  data_vencimento DateTime @db.Date
+  usuario_id      Int
+  usuarios        usuarios @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model permissoes {
+  id         Int        @id @default(autoincrement())
+  status     Int?       @default(1)
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime   @default(now()) @db.Timestamptz(6)
+  nome       String     @db.VarChar(100)
+  usuarios   usuarios[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model transacoes_recorrentes {
+  id                     Int                    @id @default(autoincrement())
+  status                 Int?                   @default(1)
+  created_at             DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime               @default(now()) @db.Timestamptz(6)
+  descricao              String                 @db.VarChar(255)
+  valor                  Decimal                @db.Decimal(10, 2)
+  tipo                   String                 @db.VarChar(20)
+  frequencia             String                 @db.VarChar(20)
+  data_inicio            DateTime               @db.Date
+  data_fim               DateTime?              @db.Date
+  proxima_execucao       DateTime               @db.Date
+  usuario_id             Int
+  categoria_id           Int
+  categoria_movimentacao categoria_movimentacao @relation(fields: [categoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios               usuarios               @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model usuarios {
+  id                      Int                       @id @default(autoincrement())
+  status                  Int?                      @default(1)
+  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  nome                    String                    @db.VarChar(100)
+  email                   String                    @unique(map: "uq_usuarios_email") @db.VarChar(254)
+  telefone                String?                   @db.VarChar(13)
+  senha                   String                    @db.VarChar(255)
+  permissao_id            Int
+  auditoria               auditoria[]
+  metas                   metas[]
+  movimentacao_financeira movimentacao_financeira[]
+  pagamentos              pagamentos[]
+  transacoes_recorrentes  transacoes_recorrentes[]
+  permissoes              permissoes                @relation(fields: [permissao_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_photo              user_photo?
+}
+
+model user_photo {
+  id         Int      @id @default(autoincrement())
+  status     Int?     @default(1)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  caminho    String   @db.VarChar(255)
+  usuario_id Int      @unique
+  usuarios   usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}

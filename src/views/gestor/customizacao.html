@@ -1,0 +1,48 @@
+<section class="crud-card" id="customizacaoCrudRoot">
+    <header class="crud-card__header">
+        <div>
+            <h2>Customização do App</h2>
+            <p>Gerencie as configurações visuais e de conteúdo do sistema.</p>
+        </div>
+
+        <button id="customizacaoAddBtn" type="button" class="action-btn action-btn--primary action-btn--static-label" title="Adicionar customização" aria-label="Adicionar customização">
+            <span class="action-btn__icon" aria-hidden="true">＋</span>
+            <span class="action-btn__label">Adicionar</span>
+        </button>
+    </header>
+
+    <div class="crud-toolbar crud-toolbar--inline">
+        <input
+            id="customizacaoSearchInput"
+            class="crud-search"
+            type="search"
+            placeholder="Pesquisar por categoria"
+            autocomplete="off"
+        >
+
+        <button id="customizacaoClearFiltersBtn" type="button" class="action-btn action-btn--ghost">
+            <span class="action-btn__icon" aria-hidden="true">✕</span>
+            <span class="action-btn__label">Limpar filtros</span>
+        </button>
+    </div>
+
+    <div class="crud-table-wrapper">
+        <table class="crud-table" aria-label="Tabela de customizações">
+            <thead>
+                <tr>
+                    <th>Categoria</th>
+                    <th class="col-tipo">Tipo</th>
+                    <th class="col-valor-display">Valor</th>
+                    <th class="col-actions">Ações</th>
+                </tr>
+            </thead>
+            <tbody id="customizacaoTableBody"></tbody>
+        </table>
+    </div>
+
+    <footer class="crud-pagination">
+        <button id="customizacaoPrevPageBtn" type="button" class="pager-btn">Anterior</button>
+        <span id="customizacaoPageInfo">Página 1 de 1</span>
+        <button id="customizacaoNextPageBtn" type="button" class="pager-btn">Próxima</button>
+    </footer>
+</section>

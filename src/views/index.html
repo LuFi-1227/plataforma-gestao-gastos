@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Gestor de Gastos</title>
+	<link rel="stylesheet" href="/styles/style.css">
+	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="/scripts/theme.js" defer></script>
+	<script src="/scripts/users-crud.js" defer></script>
+	<script src="/scripts/customizacao-crud.js" defer></script>
+	<script src="/scripts/payments-dashboard.js" defer></script>
+	<script src="/scripts/metas-crud.js" defer></script>
+	<script src="/scripts/transacoes-crud.js" defer></script>
+	<script src="/scripts/principal-dashboard.js" defer></script>
+</head>
+<body>
+	<div id="app"></div>
+
+	<template id="login-template">
+		<section class="login-screen">
+			<form id="loginForm" class="login-form">
+				<h1>Entrar</h1>
+				<input type="email" id="email" placeholder="Email" required>
+				<input type="password" id="password" placeholder="Senha" required>
+				<button type="submit">Login</button>
+			</form>
+		</section>
+	</template>
+
+	<template id="layout-template">
+		<div id="headerMount"></div>
+		<div class="layout-shell">
+			<div id="navbarMount"></div>
+			<main id="pageMount"></main>
+		</div>
+	</template>
+
+	<script>
+		(() => {
+			const TOKEN_KEY = "token";
+			const app = document.getElementById("app");
+			let marketingModeCache = null;
+
+			window.SwalFire = (...args) => Swal.fire(...args);
+
+			function getToken() {
+				return localStorage.getItem(TOKEN_KEY);
+			}
+
+			function isLogged() {
+				return Boolean(getToken());
+			}
+
+			function logout() {
+				localStorage.removeItem(TOKEN_KEY);
+				render();
+			}
+
+			function parseTokenPayload() {
+				const token = getToken();
+				if (!token) return null;
+				const parts = token.split(".");
+				if (parts.length < 2) return null;
+
+				try {
+					const payload = parts[1]
+						.replace(/-/g, "+")
+						.replace(/_/g, "/");
+					const base64 = payload.padEnd(payload.length + ((4 - payload.length % 4) % 4), "=");
+					return JSON.parse(atob(base64));
+				} catch {
+					return null;
+				}
+			}
+
+			function getUserIdFromToken() {
+				const payload = parseTokenPayload();
+				const userId = Number(payload?.sub);
+				return Number.isInteger(userId) && userId > 0 ? userId : null;
+			}
+
+			function isAdmin() {
+				const payload = parseTokenPayload();
+				return Number(payload?.permissao_id) === 1;
+			}
+
+			function normalizeText(value) {
+				return String(value ?? "")
+					.normalize("NFD")
+					.replace(/[\u0300-\u036f]/g, "")
+					.trim()
+					.toLowerCase()
+					.replace(/\s+/g, "_");
+			}
+
+			async function isMarketingAppMode() {
+				if (!isAdmin()) {
+					marketingModeCache = false;
+					return false;
+				}
+
+				if (marketingModeCache !== null) {
+					return marketingModeCache;
+				}
+
+				try {
+					const data = await ajax("/api/customizacoes");
+					const customizacoes = Array.isArray(data?.customizacoes) ? data.customizacoes : [];
+
+					marketingModeCache = customizacoes.some((item) => {
+						const categoriaNome = normalizeText(item?.categoria_nome ?? item?.categoria_customizacao?.nome);
+						const tipoValor = normalizeText(item?.tipo_valor);
+						const valor = normalizeText(item?.valor);
+						return categoriaNome === "tipo_app" && tipoValor === "tipo_de_aplicacao" && valor === "uso_para_marketing";
+					});
+				} catch {
+					marketingModeCache = false;
+				}
+
+				return marketingModeCache;
+			}
+
+			function getUserInitials(name) {
+				if (!name || typeof name !== "string") return "US";
+				const parts = name.trim().split(/\s+/).filter(Boolean);
+				if (!parts.length) return "US";
+				if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+				return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+			}
+
+			function escapeHtml(value) {
+				return String(value ?? "")
+					.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;")
+					.replace(/\"/g, "&quot;")
+					.replace(/'/g, "&#39;");
+			}
+
+			function normalizePhoneInput(value) {
+				const digits = String(value ?? "").replace(/\D/g, "");
+				if (!digits) return "";
+				const withCountryCode = digits.startsWith("55") ? digits : `55${digits}`;
+				return withCountryCode.slice(0, 13);
+			}
+
+			function isValidPhone(value) {
+				return /^55\d{2}\d{8,9}$/.test(String(value ?? ""));
+			}
+
+			async function ajax(url, options = {}) {
+				const token = getToken();
+				const isFormData = options.body instanceof FormData;
+				const headers = {
+					...(options.headers || {}),
+				};
+
+				if (!isFormData && !("Content-Type" in headers)) {
+					headers["Content-Type"] = "application/json";
+				}
+
+				if (token) {
+					headers.Authorization = `Bearer ${token}`;
+				}
+
+				const response = await fetch(url, {
+					...options,
+					headers,
+				});
+
+				const contentType = response.headers.get("content-type") || "";
+				const payload = contentType.includes("application/json")
+					? await response.json()
+					: await response.text();
+
+				if (response.status === 401) {
+					await SwalFire({
+						icon: "warning",
+						title: "Sessão expirada",
+						text: "Faça login novamente.",
+						confirmButtonText: "OK",
+					});
+					logout();
+					throw new Error("Não autorizado");
+				}
+
+				if (!response.ok) {
+					const message = payload?.message || payload?.error || "Erro na requisição";
+					throw new Error(message);
+				}
+
+				return payload;
+			}
+
+			window.ajax = ajax;
+			window.appAuth = { getToken, isLogged, logout, parseTokenPayload, isAdmin };
+
+			const pageMap = {
+				dashboard: "/gestor/principal.html",
+				pagamentosDashboard: "/gestor/pagamentos.html",
+				transacoes: "/gestor/transacoes.html",
+				metas: "/gestor/metas.html",
+				usuarios: "/gestor/usuarios.html",
+				customizacao: "/gestor/customizacao.html",
+			};
+
+			async function getDefaultPageForCurrentUser() {
+				if (!isAdmin()) {
+					return "dashboard";
+				}
+
+				const marketingModeEnabled = await isMarketingAppMode();
+				return marketingModeEnabled ? "pagamentosDashboard" : "dashboard";
+			}
+
+			async function navigateTo(pageKey) {
+				const defaultPage = await getDefaultPageForCurrentUser();
+				const normalizedPageKey = pageMap[pageKey] ? pageKey : defaultPage;
+				const targetPath = pageMap[normalizedPageKey] || pageMap.dashboard;
+				if ((normalizedPageKey === "usuarios" || normalizedPageKey === "customizacao" || normalizedPageKey === "pagamentosDashboard") && !isAdmin()) {
+					await SwalFire({
+						icon: "warning",
+						title: "Acesso restrito",
+						text: "Esta área é exclusiva para administradores.",
+						confirmButtonText: "OK",
+					});
+					if (window.location.hash !== "#dashboard") {
+						await navigateTo("dashboard");
+					}
+					return false;
+				}
+
+				if (normalizedPageKey === "pagamentosDashboard") {
+					const marketingModeEnabled = await isMarketingAppMode();
+					if (!marketingModeEnabled) {
+						await SwalFire({
+							icon: "warning",
+							title: "Acesso indisponível",
+							text: "O Dashboard de Pagamentos só está disponível quando Tipo_app está configurado como Uso para marketing.",
+							confirmButtonText: "OK",
+						});
+						await navigateTo("dashboard");
+						return false;
+					}
+				}
+
+				await loadComponent(targetPath, "pageMount");
+
+				if (normalizedPageKey === "usuarios") {
+					await window.initUsersCrud?.();
+				}
+
+				if (normalizedPageKey === "customizacao") {
+					await window.initCustomizacaoCrud?.();
+				}
+
+				if (normalizedPageKey === "pagamentosDashboard") {
+					await window.initPaymentsDashboard?.();
+				}
+
+				if (normalizedPageKey === "metas") {
+					await window.initMetasCrud?.();
+				}
+
+				if (normalizedPageKey === "dashboard") {
+					await window.initPrincipalDashboard?.();
+				}
+
+				if (normalizedPageKey === "transacoes") {
+					await window.initTransacoesCrud?.();
+				}
+
+				document.querySelectorAll(".navbar-link").forEach((link) => {
+					const isActive = link.dataset.page === normalizedPageKey;
+					link.classList.toggle("is-active", isActive);
+				});
+
+				window.location.hash = `#${normalizedPageKey}`;
+				return true;
+			}
+
+			window.appNavigate = navigateTo;
+
+			async function initNavbar() {
+				const panel = document.getElementById("navbarPanel");
+				const toggleBtn = document.getElementById("navbarToggleBtn");
+				const closeBtn = document.getElementById("navbarCloseBtn");
+				const backdrop = document.getElementById("navbarBackdrop");
+				const links = Array.from(document.querySelectorAll(".navbar-link"));
+				const adminOnlyItems = Array.from(document.querySelectorAll("[data-admin-only='true']"));
+
+				if (!panel) return;
+
+				if (!isAdmin()) {
+					adminOnlyItems.forEach((item) => {
+						item.hidden = true;
+					});
+				} else {
+					const marketingModeEnabled = await isMarketingAppMode();
+					const paymentsLink = document.querySelector(".navbar-link[data-page='pagamentosDashboard']");
+					const paymentsMenuItem = paymentsLink?.closest("li");
+					if (paymentsMenuItem) {
+						paymentsMenuItem.hidden = !marketingModeEnabled;
+					}
+				}
+
+				const isMobile = () => window.matchMedia("(max-width: 992px)").matches;
+
+				const openMobileMenu = () => {
+					if (!isMobile()) return;
+					panel.classList.add("is-open");
+					if (backdrop) {
+						backdrop.hidden = false;
+						requestAnimationFrame(() => backdrop.classList.add("is-open"));
+					}
+					toggleBtn?.setAttribute("aria-expanded", "true");
+				};
+
+				const closeMobileMenu = () => {
+					panel.classList.remove("is-open");
+					if (backdrop) {
+						backdrop.classList.remove("is-open");
+						setTimeout(() => {
+							if (!backdrop.classList.contains("is-open")) {
+								backdrop.hidden = true;
+							}
+						}, 220);
+					}
+					toggleBtn?.setAttribute("aria-expanded", "false");
+				};
+
+				toggleBtn?.addEventListener("click", () => {
+					if (panel.classList.contains("is-open")) {
+						closeMobileMenu();
+						return;
+					}
+					openMobileMenu();
+				});
+
+				closeBtn?.addEventListener("click", closeMobileMenu);
+				backdrop?.addEventListener("click", closeMobileMenu);
+
+				document.addEventListener("keydown", (event) => {
+					if (event.key === "Escape") {
+						closeMobileMenu();
+					}
+				});
+
+				links.forEach((link) => {
+					link.addEventListener("click", async () => {
+						const page = link.dataset.page;
+						await navigateTo(page);
+						closeMobileMenu();
+					});
+				});
+
+				window.addEventListener("resize", () => {
+					if (!isMobile()) {
+						closeMobileMenu();
+					}
+				});
+
+				const initialHash = (window.location.hash || "").replace("#", "");
+				const initialPage = initialHash || await getDefaultPageForCurrentUser();
+				const navigated = await navigateTo(initialPage);
+				const defaultPage = await getDefaultPageForCurrentUser();
+				if (!navigated && initialPage !== defaultPage) {
+					await navigateTo(defaultPage);
+				}
+			}
+
+			async function initHeader() {
+				const notificationsBtn = document.getElementById("headerNotificationsBtn");
+				const notificationsBadge = document.getElementById("headerNotificationsBadge");
+				const menuTrigger = document.getElementById("headerUserMenuTrigger");
+				const menu = document.getElementById("headerUserMenu");
+				const menuWrapper = document.getElementById("headerUserMenuWrapper");
+				const editUserBtn = document.getElementById("headerEditUserBtn");
+				const logoutBtn = document.getElementById("headerLogoutBtn");
+				const userNameEl = document.getElementById("headerUserName");
+				const userAvatarEl = document.getElementById("headerUserAvatar");
+				const logoImageEl = document.getElementById("headerLogoImage");
+				const logoTextEl = document.getElementById("headerLogoText");
+
+				if (!menuTrigger || !menu) return;
+
+				const syncHeaderUser = (usuario) => {
+					const userName = usuario?.nome || "Usuário";
+					if (userNameEl) userNameEl.textContent = userName;
+					if (userAvatarEl) {
+						const fotoUrl = usuario?.user_photo?.foto_url || usuario?.user_photo?.caminho || "";
+						userAvatarEl.textContent = fotoUrl ? "" : getUserInitials(userName);
+						userAvatarEl.classList.toggle("has-image", Boolean(fotoUrl));
+						userAvatarEl.style.backgroundImage = fotoUrl ? `url(${fotoUrl})` : "";
+					}
+				};
+
+				const renderNotificationsBadge = (countRaw) => {
+					const count = Number(countRaw);
+					if (!notificationsBadge) return;
+					if (!Number.isFinite(count) || count <= 0) {
+						notificationsBadge.hidden = true;
+						notificationsBadge.textContent = "0";
+						return;
+					}
+					notificationsBadge.hidden = false;
+					notificationsBadge.textContent = count > 99 ? "99+" : String(count);
+				};
+
+				const refreshHeaderNotifications = async () => {
+					try {
+						const data = await ajax("/api/metas/notificacoes?peek=1");
+						renderNotificationsBadge(data?.totalPendentes ?? 0);
+					} catch {
+						renderNotificationsBadge(0);
+					}
+				};
+
+				window.refreshHeaderNotifications = refreshHeaderNotifications;
+
+				const openChangePasswordSwal = async (userId) => {
+					const result = await SwalFire({
+						title: "Trocar senha",
+						html: `
+							<div class="swal-form-grid">
+								<input id="swal-current-password" class="swal2-input" placeholder="Senha atual" type="password" autocomplete="current-password">
+								<input id="swal-new-password" class="swal2-input" placeholder="Nova senha" type="password" autocomplete="new-password">
+								<input id="swal-confirm-password" class="swal2-input" placeholder="Confirmar nova senha" type="password" autocomplete="new-password">
+							</div>
+						`,
+						focusConfirm: false,
+						showCancelButton: true,
+						cancelButtonText: "Cancelar",
+						confirmButtonText: "Alterar senha",
+						preConfirm: () => {
+							const senhaAtual = document.getElementById("swal-current-password")?.value ?? "";
+							const novaSenha = document.getElementById("swal-new-password")?.value ?? "";
+							const confirmacaoSenha = document.getElementById("swal-confirm-password")?.value ?? "";
+
+							if (!senhaAtual) {
+								Swal.showValidationMessage("Informe a senha atual");
+								return null;
+							}
+							if (!novaSenha || novaSenha.length < 6) {
+								Swal.showValidationMessage("A nova senha deve ter no mínimo 6 caracteres");
+								return null;
+							}
+							if (novaSenha !== confirmacaoSenha) {
+								Swal.showValidationMessage("A confirmação da nova senha não confere");
+								return null;
+							}
+							if (senhaAtual === novaSenha) {
+								Swal.showValidationMessage("A nova senha deve ser diferente da atual");
+								return null;
+							}
+
+							return { senhaAtual, novaSenha, confirmacaoSenha };
+						},
+					});
+
+					if (!result.isConfirmed || !result.value) return;
+
+					await ajax(`/api/usuarios/${userId}/alterar-senha`, {
+						method: "POST",
+						body: JSON.stringify(result.value),
+					});
+
+					await SwalFire({
+						icon: "success",
+						title: "Senha alterada",
+						text: "Sua senha foi alterada com sucesso.",
+						confirmButtonText: "OK",
+					});
+				};
+
+				const openEditOwnUserSwal = async () => {
+					const userId = getUserIdFromToken();
+					if (!userId) {
+						throw new Error("Usuário não identificado");
+					}
+
+					const data = await ajax(`/api/usuarios/${userId}`);
+					const usuario = data?.usuario;
+					if (!usuario) {
+						throw new Error("Usuário não encontrado");
+					}
+
+					const result = await SwalFire({
+						title: "Editar usuário",
+						html: `
+							<div class="swal-form-grid">
+								<div class="swal-photo-picker">
+									<button id="swal-self-photo-trigger" type="button" class="swal-photo-picker__button" aria-label="Editar foto do usuário">
+										<span id="swal-self-photo-preview" class="swal-photo-picker__preview ${usuario?.user_photo?.foto_url || usuario?.user_photo?.caminho ? "has-image" : ""}" style="${usuario?.user_photo?.foto_url || usuario?.user_photo?.caminho ? `background-image:url(${escapeHtml(usuario?.user_photo?.foto_url || usuario?.user_photo?.caminho)});` : ""}">${usuario?.user_photo?.foto_url || usuario?.user_photo?.caminho ? "" : escapeHtml(getUserInitials(usuario.nome || "Usuário"))}</span>
+										<span class="swal-photo-picker__icon" aria-hidden="true">✎</span>
+									</button>
+									<input id="swal-self-photo-input" type="file" accept="image/*" hidden>
+								</div>
+								<input id="swal-self-nome" class="swal2-input" placeholder="Nome" autocomplete="off" value="${String(usuario.nome ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;")}">
+								<input id="swal-self-email" class="swal2-input" placeholder="Email" type="email" autocomplete="off" value="${String(usuario.email ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;")}">
+								<input id="swal-self-telefone" class="swal2-input" placeholder="Telefone (5563999999999)" type="tel" inputmode="numeric" autocomplete="off" value="${String(usuario.telefone ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;")}">
+							</div>
+						`,
+						focusConfirm: false,
+						showCancelButton: true,
+						showDenyButton: true,
+						cancelButtonText: "Cancelar",
+						confirmButtonText: "Salvar",
+						denyButtonText: "Trocar senha",
+						didOpen: () => {
+							const telefoneInput = document.getElementById("swal-self-telefone");
+							const photoTrigger = document.getElementById("swal-self-photo-trigger");
+							const photoInput = document.getElementById("swal-self-photo-input");
+							const photoPreview = document.getElementById("swal-self-photo-preview");
+							telefoneInput?.addEventListener("input", () => {
+								telefoneInput.value = normalizePhoneInput(telefoneInput.value);
+							});
+							photoTrigger?.addEventListener("click", () => photoInput?.click());
+							photoInput?.addEventListener("change", () => {
+								const file = photoInput.files?.[0];
+								if (!file || !photoPreview) return;
+								const objectUrl = URL.createObjectURL(file);
+								photoPreview.classList.add("has-image");
+								photoPreview.style.backgroundImage = `url(${objectUrl})`;
+								photoPreview.textContent = "";
+							});
+						},
+						preConfirm: () => {
+							const nome = document.getElementById("swal-self-nome")?.value?.trim();
+							const email = document.getElementById("swal-self-email")?.value?.trim();
+							const telefone = normalizePhoneInput(document.getElementById("swal-self-telefone")?.value?.trim());
+							const foto = document.getElementById("swal-self-photo-input")?.files?.[0] ?? null;
+
+							if (!nome || nome.length < 2) {
+								Swal.showValidationMessage("Informe um nome válido");
+								return null;
+							}
+							if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+								Swal.showValidationMessage("Informe um email válido");
+								return null;
+							}
+							if (!telefone || !isValidPhone(telefone)) {
+								Swal.showValidationMessage("Informe um telefone válido no padrão 5563999999999");
+								return null;
+							}
+
+							return { nome, email, telefone, foto };
+						},
+						preDeny: () => ({ action: "change-password" }),
+					});
+
+					if (result.isConfirmed && result.value) {
+						const response = await ajax(`/api/usuarios/${userId}`, {
+							method: "PUT",
+							body: JSON.stringify({
+								nome: result.value.nome,
+								email: result.value.email,
+								telefone: result.value.telefone,
+							}),
+						});
+
+						let usuarioAtualizado = response?.usuario || result.value;
+						if (result.value.foto) {
+							const formData = new FormData();
+							formData.append("foto", result.value.foto);
+							const fotoResponse = await ajax(`/api/usuarios/${userId}/foto`, {
+								method: "POST",
+								body: formData,
+								headers: {},
+							});
+							usuarioAtualizado = {
+								...usuarioAtualizado,
+								user_photo: fotoResponse?.foto,
+							};
+						}
+
+						syncHeaderUser(usuarioAtualizado);
+						await SwalFire({
+							icon: "success",
+							title: "Usuário atualizado",
+							text: "Seus dados foram atualizados com sucesso.",
+							confirmButtonText: "OK",
+						});
+						return;
+					}
+
+					if (result.isDenied) {
+						await openChangePasswordSwal(userId);
+					}
+				};
+
+				let userName = "Usuário";
+				let currentUser = null;
+				const userId = getUserIdFromToken();
+				if (userId) {
+					try {
+						const data = await ajax(`/api/usuarios/${userId}`);
+						currentUser = data?.usuario || null;
+						userName = currentUser?.nome || userName;
+					} catch {
+						// Mantém fallback
+					}
+				}
+
+				syncHeaderUser(currentUser || { nome: userName });
+				await refreshHeaderNotifications();
+
+				const logoUrl = getComputedStyle(document.documentElement)
+					.getPropertyValue("--brand-logo-url")
+					.trim()
+					.replace(/^['"]|['"]$/g, "");
+
+				if (logoUrl && logoImageEl) {
+					logoImageEl.src = logoUrl;
+					logoImageEl.hidden = false;
+					if (logoTextEl) logoTextEl.hidden = true;
+				}
+
+				const openMenu = () => {
+					menu.hidden = false;
+					menuTrigger.setAttribute("aria-expanded", "true");
+				};
+
+				const closeMenu = () => {
+					menu.hidden = true;
+					menuTrigger.setAttribute("aria-expanded", "false");
+				};
+
+				closeMenu();
+
+				menuTrigger.addEventListener("click", (event) => {
+					event.stopPropagation();
+					if (menu.hidden) {
+						openMenu();
+						return;
+					}
+					closeMenu();
+				});
+
+				document.addEventListener("click", (event) => {
+					if (!menuWrapper?.contains(event.target)) {
+						closeMenu();
+					}
+				});
+
+				document.addEventListener("keydown", (event) => {
+					if (event.key === "Escape") {
+						closeMenu();
+					}
+				});
+
+				notificationsBtn?.addEventListener("click", async () => {
+					try {
+						const data = await ajax("/api/metas/notificacoes");
+						const notificacoes = Array.isArray(data?.notificacoes) ? data.notificacoes : [];
+
+						if (!notificacoes.length) {
+							await SwalFire({
+								icon: "info",
+								title: "Notificações",
+								text: "Você não possui notificações no momento.",
+								confirmButtonText: "OK",
+							});
+							await refreshHeaderNotifications();
+							return;
+						}
+
+						const principal = notificacoes[0];
+						const concorrentes = Number(principal.concorrentesNoPeriodo ?? 0);
+						const concorrentesLabel = concorrentes > 0
+							? `<p><strong>Concorrência no período:</strong> ${concorrentes} meta(s). A de maior valor foi priorizada.</p>`
+							: "";
+
+						await SwalFire({
+							icon: "success",
+							title: principal.titulo || "Notificações",
+							html: `
+								<div class="swal-form-grid">
+									<p>${escapeHtml(principal.mensagem || "")}</p>
+									<p><strong>Valor da meta:</strong> ${Number(principal.valorMeta ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+									${concorrentesLabel}
+								</div>
+							`,
+							confirmButtonText: "Fechar",
+						});
+
+						await refreshHeaderNotifications();
+					} catch (error) {
+						await SwalFire({
+							icon: "error",
+							title: "Erro ao carregar notificações",
+							text: error?.message || "Não foi possível carregar notificações agora.",
+							confirmButtonText: "OK",
+						});
+					}
+				});
+
+				editUserBtn?.addEventListener("click", async () => {
+					closeMenu();
+					try {
+						await openEditOwnUserSwal();
+					} catch (error) {
+						await SwalFire({
+							icon: "error",
+							title: "Erro ao editar usuário",
+							text: error?.message || "Não foi possível abrir a edição do usuário.",
+							confirmButtonText: "OK",
+						});
+					}
+				});
+
+				logoutBtn?.addEventListener("click", async () => {
+					closeMenu();
+					await SwalFire({
+						icon: "success",
+						title: "Até logo",
+						text: "Logout realizado com sucesso.",
+						timer: 1200,
+						showConfirmButton: false,
+					});
+					logout();
+				});
+			}
+
+			async function loadComponent(path, mountId) {
+				const mount = document.getElementById(mountId);
+				if (!mount) return;
+				try {
+					const html = await fetch(path).then((r) => r.text());
+					mount.innerHTML = html;
+				} catch {
+					mount.innerHTML = "";
+				}
+			}
+
+			function mountLogin() {
+				app.innerHTML = "";
+				const template = document.getElementById("login-template");
+				app.appendChild(template.content.cloneNode(true));
+
+				const form = document.getElementById("loginForm");
+				form.addEventListener("submit", async (e) => {
+					e.preventDefault();
+					const email = document.getElementById("email").value;
+					const password = document.getElementById("password").value;
+
+					try {
+						const data = await ajax("/api/login", {
+							method: "POST",
+							body: JSON.stringify({ email, password }),
+							headers: {},
+						});
+
+						if (data?.token) {
+							localStorage.setItem(TOKEN_KEY, data.token);
+						}
+
+						await SwalFire({
+							icon: "success",
+							title: "Login realizado",
+							text: data?.message || "Bem-vindo!",
+							timer: 1400,
+							showConfirmButton: false,
+						});
+
+						render();
+					} catch (error) {
+						await SwalFire({
+							icon: "error",
+							title: "Falha no login",
+							text: error.message || "Credenciais inválidas",
+							confirmButtonText: "OK",
+						});
+					}
+				});
+			}
+
+			async function mountLayout() {
+				app.innerHTML = "";
+				const template = document.getElementById("layout-template");
+				app.appendChild(template.content.cloneNode(true));
+
+				await Promise.all([
+					loadComponent("/components/header.html", "headerMount"),
+					loadComponent("/components/navbar.html", "navbarMount"),
+				]);
+
+				await initHeader();
+				await initNavbar();
+			}
+
+			function render() {
+				if (isLogged()) {
+					mountLayout();
+					return;
+				}
+				mountLogin();
+			}
+
+			render();
+		})();
+	</script>
+</body>
+</html>

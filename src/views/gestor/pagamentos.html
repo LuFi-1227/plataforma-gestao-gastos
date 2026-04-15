@@ -1,0 +1,179 @@
+<section class="crud-card" id="paymentsDashboardRoot">
+    <header class="crud-card__header">
+        <div>
+            <h2>Dashboard de Pagamentos</h2>
+            <p>Gerencie pagamentos com cadastro, edição, filtros avançados e ordenação.</p>
+        </div>
+
+        <button id="paymentsAddBtn" type="button" class="action-btn action-btn--primary action-btn--static-label" title="Adicionar pagamento" aria-label="Adicionar pagamento">
+            <span class="action-btn__icon" aria-hidden="true">＋</span>
+            <span class="action-btn__label">Adicionar pagamento</span>
+        </button>
+    </header>
+
+    <div class="tabs-shell" role="tablist" aria-label="Abas de pagamentos">
+        <button id="paymentsTabCrud" type="button" class="tab-btn is-active" role="tab" aria-selected="true">Pagamentos</button>
+        <button id="paymentsTabDashboard" type="button" class="tab-btn" role="tab" aria-selected="false">Dashboard</button>
+    </div>
+
+    <section id="paymentsPanelCrud" class="tab-panel is-active" role="tabpanel" aria-labelledby="paymentsTabCrud">
+        <div class="crud-toolbar payments-filters-grid">
+            <input id="paymentsSearchInput" class="crud-search" type="search" placeholder="Pesquisar por descrição ou usuário" autocomplete="off">
+
+            <select id="paymentsFilterAtraso" class="crud-search">
+                <option value="todos" selected>Todos os pagamentos</option>
+                <option value="atrasados">Somente atrasados</option>
+                <option value="em_dia">Somente em dia</option>
+            </select>
+
+            <select id="paymentsFilterTipo" class="crud-search">
+                <option value="">Todos os tipos</option>
+                <option value="diario">Diário</option>
+                <option value="semanal">Semanal</option>
+                <option value="quinzenal">Quinzenal</option>
+                <option value="mensal">Mensal</option>
+                <option value="bimestral">Bimestral</option>
+                <option value="trimestral">Trimestral</option>
+                <option value="semestral">Semestral</option>
+                <option value="anual">Anual</option>
+            </select>
+
+            <select id="paymentsFilterMes" class="crud-search">
+                <option value="">Todos os meses</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+            </select>
+
+            <input id="paymentsFilterAno" class="crud-search" type="number" min="2000" step="1" placeholder="Ano (ex: 2026)">
+
+            <select id="paymentsSortBy" class="crud-search">
+                <option value="mais_recente" selected>Pagamento mais recente</option>
+                <option value="usuario_az">Nome do user em ordem alfabética</option>
+                <option value="mais_antigo">Pagamento mais antigo</option>
+            </select>
+
+            <button id="paymentsApplyFiltersBtn" type="button" class="action-btn action-btn--ghost">
+                <span class="action-btn__icon" aria-hidden="true">🔎</span>
+                <span class="action-btn__label">Aplicar filtros</span>
+            </button>
+
+            <button id="paymentsClearFiltersBtn" type="button" class="action-btn action-btn--ghost">
+                <span class="action-btn__icon" aria-hidden="true">✕</span>
+                <span class="action-btn__label">Limpar filtros</span>
+            </button>
+        </div>
+
+        <div class="crud-table-wrapper">
+            <table class="crud-table" aria-label="Tabela de pagamentos">
+                <thead>
+                    <tr>
+                        <th>Descrição</th>
+                        <th>Usuário</th>
+                        <th>Tipo</th>
+                        <th>Valor</th>
+                        <th>Pagamento</th>
+                        <th>Vencimento</th>
+                        <th class="col-actions">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="paymentsTableBody"></tbody>
+            </table>
+        </div>
+
+        <footer class="crud-pagination">
+            <button id="paymentsPrevPageBtn" type="button" class="pager-btn">Anterior</button>
+            <span id="paymentsPageInfo">Página 1 de 1</span>
+            <button id="paymentsNextPageBtn" type="button" class="pager-btn">Próxima</button>
+        </footer>
+    </section>
+
+    <section id="paymentsPanelDashboard" class="tab-panel" role="tabpanel" aria-labelledby="paymentsTabDashboard" hidden>
+        <div class="crud-toolbar payments-dashboard-controls">
+            <select id="paymentsChartMetric" class="crud-search">
+                <option value="valor" selected>Ganhos por período</option>
+                <option value="quantidade">Pagamentos por período</option>
+            </select>
+
+            <select id="paymentsChartGroupBy" class="crud-search">
+                <option value="mes" selected>Ganhos por mês</option>
+                <option value="ano">Ganhos por ano</option>
+            </select>
+
+            <input id="paymentsChartAno" class="crud-search" type="number" min="2000" step="1" placeholder="Ano para gráfico mensal (opcional)">
+
+            <button id="paymentsRefreshDashboardBtn" type="button" class="action-btn action-btn--ghost">
+                <span class="action-btn__icon" aria-hidden="true">↻</span>
+                <span class="action-btn__label">Atualizar dashboard</span>
+            </button>
+
+            <button id="paymentsClearDashboardFiltersBtn" type="button" class="action-btn action-btn--ghost">
+                <span class="action-btn__icon" aria-hidden="true">✕</span>
+                <span class="action-btn__label">Limpar filtros</span>
+            </button>
+        </div>
+
+        <div class="payments-metrics-grid">
+            <article class="metric-card">
+                <span class="metric-card__label">Total de assinaturas</span>
+                <strong id="paymentsTotalSubscriptionsValue" class="metric-card__value">0</strong>
+                <span class="metric-card__hint">Total de registros ativos de pagamentos/assinaturas.</span>
+            </article>
+
+            <article class="metric-card">
+                <div class="metric-card__header">
+                    <span class="metric-card__label">Assinaturas por tipo</span>
+                    <select id="paymentsSubscriptionTypeMetric" class="crud-search metric-card__control">
+                        <option value="mensal" selected>Mensal</option>
+                        <option value="diario">Diário</option>
+                        <option value="semanal">Semanal</option>
+                        <option value="quinzenal">Quinzenal</option>
+                        <option value="bimestral">Bimestral</option>
+                        <option value="trimestral">Trimestral</option>
+                        <option value="semestral">Semestral</option>
+                        <option value="anual">Anual</option>
+                    </select>
+                </div>
+                <strong id="paymentsSubscriptionsByTypeValue" class="metric-card__value">0</strong>
+                <span id="paymentsSubscriptionsByTypeHint" class="metric-card__hint">Assinaturas do tipo mensal.</span>
+            </article>
+
+            <article class="metric-card">
+                <span class="metric-card__label">Pagamentos no mês atual</span>
+                <strong id="paymentsCurrentMonthCountValue" class="metric-card__value">0</strong>
+                <span id="paymentsCurrentMonthCountHint" class="metric-card__hint">Pagamentos confirmados no mês atual.</span>
+            </article>
+
+            <article class="metric-card">
+                <span class="metric-card__label">Ganhos totais</span>
+                <strong id="paymentsTotalValue" class="metric-card__value">R$ 0,00</strong>
+                <span class="metric-card__hint">Soma de todos os pagamentos ativos.</span>
+            </article>
+
+            <article class="metric-card">
+                <span class="metric-card__label">Receita do mês atual</span>
+                <strong id="paymentsCurrentMonthRevenueValue" class="metric-card__value">R$ 0,00</strong>
+                <span id="paymentsCurrentMonthRevenueHint" class="metric-card__hint">Soma recebida no mês atual.</span>
+            </article>
+
+            <article class="metric-card">
+                <span class="metric-card__label">Pagamentos atrasados</span>
+                <strong id="paymentsOverdueCountValue" class="metric-card__value">0</strong>
+                <span class="metric-card__hint">Pagamentos com vencimento anterior a hoje.</span>
+            </article>
+        </div>
+
+        <div class="payments-chart-wrap">
+            <canvas id="paymentsChartCanvas" aria-label="Gráfico de ganhos" role="img"></canvas>
+        </div>
+    </section>
+</section>
