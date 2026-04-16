@@ -2,7 +2,6 @@ import "dotenv/config";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-
 // Middlewares
 import { requireAuth } from "./src/middlewares/auth.js";
 import { requireAdmin } from "./src/middlewares/requireAdmin.js";
@@ -11,6 +10,7 @@ import { uploadFotoMiddleware } from "./src/middlewares/upload.js";
 import { uploadUserPhotoMiddleware } from "./src/middlewares/upload.js";
 
 // Controllers
+import { converterAudioController } from "./src/controllers/conversor_audio/audio.js";
 import { loginController, loginPorTelefoneController } from "./src/controllers/usuarios/login.js";
 import { salvarFotoUsuarioController } from "./src/controllers/usuarios/user_photo.js";
 import {
@@ -99,6 +99,8 @@ const __dirname = path.dirname(__filename);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "src/views")));
 
+// Audio
+app.post("/api/audio/convert", converterAudioController);
 // ─── Página inicial ───────────────────────────────────────────────────────────
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "src/views/index.html"));
