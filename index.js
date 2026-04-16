@@ -49,6 +49,7 @@ import {
     atualizarTransacaoController,
     excluirTransacaoController,
 } from "./src/controllers/transacoes/transacoes.js";
+import { relatorioMovimentacaoController } from "./src/controllers/relatorios/relatorio_movimentacao.js";
 import {
     listarMetasController,
     listarCategoriasMovimentacaoParaMetasController,
@@ -178,6 +179,7 @@ app.get("/api/interacao/permissao", requireAuth, validarPermissaoInteracaoContro
 app.get("/api/transacoes", requireAuth, checkTransacoesRecorrentes, listarTransacoesController);
 app.get("/api/transacoes/categorias-movimentacao", requireAuth, listarCategoriasMovimentacaoParaTransacoesController);
 app.get("/api/dashboard/resumo", requireAuth, resumoDashboardTransacoesController);
+app.get("/api/relatorio/movimentacao", requireAuth, relatorioMovimentacaoController);
 app.post("/api/transacoes", requireAuth, criarTransacaoController);
 app.get("/api/transacoes/:id", requireAuth, getTransacaoController);
 app.put("/api/transacoes/:id", requireAuth, atualizarTransacaoController);
